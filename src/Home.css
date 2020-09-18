@@ -1,0 +1,12 @@
+.blink {
+    animation: blinker 1.0s linear infinite;
+    color: purple;
+    font-size: 30px;
+    font-weight: bold;
+    font-family: sans-serif;
+  }
+  @keyframes blinker {
+    40% {
+      opacity: 0;
+    }
+  }
