@@ -54,23 +54,36 @@ class Home extends React.Component {
                 }
             }
 
+            ,
+            description: ""
         }
         this.handleSliderEvent = this.handleSliderEvent.bind(this);
         this.mergeSortSlice=this.mergeSortSlice.bind(this);
         this.quickSort = this.quickSort.bind(this);
         this.partition = this.partition.bind(this);
         this.ClickQuickSort=this.ClickQuickSort.bind(this);
+        this.ClickMergeSort=this.ClickMergeSort.bind(this);
         this.ClickBubbleSort=this.ClickBubbleSort.bind(this);
         this.bubbleSort=this.bubbleSort.bind(this);
         this.ClickHeapSort=this.ClickHeapSort.bind(this);
         this.heapSort=this.heapSort.bind(this);
         this.heap_root=this.heap_root.bind(this);
+        this.currentSortRun = 0;
     }
 
 
     componentDidMount(){
         this.getChartData();
         console.log("inside component did mount");
+    }
+
+    startSortRun=()=>{
+        this.currentSortRun += 1;
+        return this.currentSortRun;
+    }
+
+    isSortRunActive=(runId)=>{
+        return this.currentSortRun === runId;
     }
 
     getChartData=()=>{
@@ -109,31 +122,45 @@ class Home extends React.Component {
 
 
     //parent merge sort call
-      mergeSort=()=> {
+      mergeSort=(runId)=> {
 
         const data1 = this.state.data;
         let unsortedArray = data1.datasets[0].data;
         // create copy of the array 
        let slicedArray = unsortedArray.slice()
         // asynchronous sort the copy
-        this.mergeSortSlice(slicedArray, 0, slicedArray.length);
+        this.mergeSortSlice(slicedArray, 0, slicedArray.length, runId);
         return;
     }
 
+        ClickMergeSort(){
+                const runId = this.startSortRun();
+                this.setState({description: "Merge Sort: A divide-and-conquer algorithm that recursively splits the array into halves, sorts each half, and then merges the sorted halves into a single sorted array. Stable and runs in O(n log n) time."});
+                this.mergeSort(runId);
+        }
+
     //recursive merge sort calls for sorting the arrays
-    async mergeSortSlice(array, leftIndex, rightIndex) {
+    async mergeSortSlice(array, leftIndex, rightIndex, runId) {
+        if (!this.isSortRunActive(runId))
+            return false;
+
         if (rightIndex-leftIndex <= 1)
-            return;
+            return true;
         
         let midValue = Math.round((rightIndex+leftIndex) / 2);
     
         // perform recursions
-        await this.mergeSortSlice(array, leftIndex, midValue);
-        await this.mergeSortSlice(array, midValue, rightIndex);
+        if (!await this.mergeSortSlice(array, leftIndex, midValue, runId))
+            return false;
+        if (!await this.mergeSortSlice(array, midValue, rightIndex, runId))
+            return false;
     
          // Merge the values in the same array and shift others.
         let i = leftIndex, j = midValue;
         while (i < rightIndex && j < rightIndex) {
+            if (!this.isSortRunActive(runId))
+                return false;
+
             let data1 = this.state.data;
             let sleepTime = this.state.sleepTime;
             const slideValue = this.state.slideValue;
@@ -154,12 +181,18 @@ class Home extends React.Component {
                 sleepTime=20;
             }
             await this.sleep(sleepTime);
+
+            if (!this.isSortRunActive(runId))
+                return false;
             
             data1.datasets[0].backgroundColor[i]="purple";
             data1.datasets[0].backgroundColor[j]="purple";
             this.setState({data: data1});
 
             await this.sleep(sleepTime);
+
+            if (!this.isSortRunActive(runId))
+                return false;
 
             if (array[i] > array[j]) {
                 let tempArray = array[j]; 
@@ -180,6 +213,9 @@ class Home extends React.Component {
             // slow down
             await this.sleep(sleepTime);
 
+            if (!this.isSortRunActive(runId))
+                return false;
+
             console.log("checking for sleep fn")
 
             
@@ -189,6 +225,8 @@ class Home extends React.Component {
             this.setState({data: data1});
 
         }
+
+        return true;
     }
 
     //sleep for the mentioned sleep time
@@ -200,11 +238,14 @@ class Home extends React.Component {
     //parent Quick sort call
 async ClickQuickSort(){
 
+        const runId = this.startSortRun();
+        this.setState({description: "Quick Sort: A divide-and-conquer algorithm that selects a pivot, partitions elements into those less than and greater than the pivot, then recursively sorts the partitions. Average O(n log n), worst-case O(n^2)."});
+
         const data1 = this.state.data;
         let unsortedArray = data1.datasets[0].data;
         // create copy of the array 
        
-    await  this.quickSort(unsortedArray, 0, unsortedArray.length-1);
+    await  this.quickSort(unsortedArray, 0, unsortedArray.length-1, runId);
 
      /*  data1.datasets[0].data = sortedArray;
 
@@ -214,15 +255,26 @@ async ClickQuickSort(){
     }
 
     //recursive quick sort calls
-  async  quickSort(items, left, right) {
+  async  quickSort(items, left, right, runId) {
+        if (!this.isSortRunActive(runId))
+            return false;
+
         if(left<right){
-          let index = await this.partition(items, left, right);
-            await this.quickSort(items, left, index - 1);
-            await this.quickSort(items, index+1, right);
+          let index = await this.partition(items, left, right, runId);
+            if (index === null || !this.isSortRunActive(runId))
+                return false;
+            if (!await this.quickSort(items, left, index - 1, runId))
+                return false;
+            if (!await this.quickSort(items, index+1, right, runId))
+                return false;
         }
+
+        return true;
     }
 
-async  partition(items, left, right) {
+async  partition(items, left, right, runId) {
+        if (!this.isSortRunActive(runId))
+            return null;
 
         let data1 = this.state.data;
             let sleepTime = this.state.sleepTime;
@@ -244,11 +296,17 @@ async  partition(items, left, right) {
                 sleepTime=20;
             }
             await this.sleep(sleepTime);
+
+            if (!this.isSortRunActive(runId))
+                return null;
         
         let x=items[right];
         let i=left -1;
 
         for(let j=left; j<right;j++){
+            if (!this.isSortRunActive(runId))
+                return null;
+
             if(items[j]<=x){
                 i++;
                 let temp = items[i];
@@ -261,12 +319,18 @@ async  partition(items, left, right) {
 
                 await this.sleep(sleepTime);
 
+                if (!this.isSortRunActive(runId))
+                    return null;
+
                 for(let i=0;i<items.length;i++){
                     data1.datasets[0].backgroundColor[i]="lightblue";
                 }
         
                     // slow down
                     await this.sleep(sleepTime);
+
+                    if (!this.isSortRunActive(runId))
+                        return null;
                     
                         data1.datasets[0].data=items;
                         data1.labels=items;
@@ -286,12 +350,18 @@ async  partition(items, left, right) {
 
             await this.sleep(sleepTime);
 
+            if (!this.isSortRunActive(runId))
+                return null;
+
             for(let i=0;i<items.length;i++){
                 data1.datasets[0].backgroundColor[i]="lightblue";
             }
     
                 // slow down
                 await this.sleep(sleepTime);
+
+                if (!this.isSortRunActive(runId))
+                    return null;
     
                 console.log("checking for sleep fn")
     
@@ -307,11 +377,17 @@ async  partition(items, left, right) {
 //click bubble sort
 async ClickBubbleSort(){
 
+    const runId = this.startSortRun();
+    this.setState({description: "Bubble Sort: A simple comparison-based algorithm that repeatedly steps through the list, compares adjacent elements and swaps them if they are in the wrong order. Easy to understand but inefficient (O(n^2))."});
+
     const data1 = this.state.data;
     let unsortedArray = data1.datasets[0].data;
     // create copy of the array 
    
-    await this.bubbleSort(unsortedArray);
+    await this.bubbleSort(unsortedArray, runId);
+
+    if (!this.isSortRunActive(runId))
+        return;
 
    data1.datasets[0].data = unsortedArray;
 
@@ -320,7 +396,9 @@ async ClickBubbleSort(){
    });
 }
 
-async  bubbleSort(unsortedArray){
+async  bubbleSort(unsortedArray, runId){
+    if (!this.isSortRunActive(runId))
+        return false;
 
     let data1 = this.state.data;
             let sleepTime = this.state.sleepTime;
@@ -343,8 +421,14 @@ async  bubbleSort(unsortedArray){
             }
             await this.sleep(sleepTime);
 
+            if (!this.isSortRunActive(runId))
+                return false;
+
     for(let i=0; i<unsortedArray.length;i++){
         for(let j=0;j<unsortedArray.length;j++){
+            if (!this.isSortRunActive(runId))
+                return false;
+
             if(unsortedArray[j]>unsortedArray[j+1]){
                 let temp = unsortedArray[j];
                 unsortedArray[j]=unsortedArray[j+1];
@@ -356,11 +440,17 @@ async  bubbleSort(unsortedArray){
 
                 await this.sleep(sleepTime);
 
+                if (!this.isSortRunActive(runId))
+                    return false;
+
                 for(let i=0;i<unsortedArray.length;i++){
                     data1.datasets[0].backgroundColor[i]="lightblue";
                 }
                     // slow down
                     await this.sleep(sleepTime);
+
+                    if (!this.isSortRunActive(runId))
+                        return false;
                     
                         data1.datasets[0].data=unsortedArray;
                         data1.labels=unsortedArray;
@@ -372,6 +462,8 @@ async  bubbleSort(unsortedArray){
             }
         }
     }
+
+    return true;
 }
 
 
@@ -380,11 +472,17 @@ async  bubbleSort(unsortedArray){
 //click heap sort
 async ClickHeapSort(){
 
+    const runId = this.startSortRun();
+    this.setState({description: "Heap Sort: Builds a binary heap from the input, then repeatedly extracts the maximum (or minimum) to produce a sorted array. Runs in O(n log n) time and is not stable."});
+
     const data1 = this.state.data;
     let unsortedArray = data1.datasets[0].data;
     // create copy of the array 
    
-    await this.heapSort(unsortedArray);
+    await this.heapSort(unsortedArray, runId);
+
+    if (!this.isSortRunActive(runId))
+        return;
 
    data1.datasets[0].data = unsortedArray;
 
@@ -395,7 +493,10 @@ async ClickHeapSort(){
 
 
 
-async heapSort(input) {
+async heapSort(input, runId) {
+    if (!this.isSortRunActive(runId))
+        return false;
+
     let data1 = this.state.data;
             let sleepTime = this.state.sleepTime;
             const slideValue = this.state.slideValue;
@@ -416,14 +517,21 @@ async heapSort(input) {
                 sleepTime=20;
             }
             await this.sleep(sleepTime);
+
+            if (!this.isSortRunActive(runId))
+                return false;
     
    let array_length = input.length;
 
     for (let i = Math.floor(array_length / 2); i >= 0; i -= 1)      {
-       await this.heap_root(input, i,array_length);
+       if (!await this.heap_root(input, i,array_length, runId))
+            return false;
       }
 
     for (let i = input.length - 1; i > 0; i--) {
+        if (!this.isSortRunActive(runId))
+            return false;
+
         //swapping
         let temp = input[0];
         input[0] = input[i];
@@ -436,11 +544,17 @@ async heapSort(input) {
 
                 await this.sleep(sleepTime);
 
+                if (!this.isSortRunActive(runId))
+                    return false;
+
                 for(let i=0;i<input.length;i++){
                     data1.datasets[0].backgroundColor[i]="lightblue";
                 }
                     // slow down
                     await this.sleep(sleepTime);
+
+                    if (!this.isSortRunActive(runId))
+                        return false;
                     
                         data1.datasets[0].data=input;
                         data1.labels=input;
@@ -452,13 +566,19 @@ async heapSort(input) {
 
       
       
-      await  this.heap_root(input, 0, array_length);
+      if (!await this.heap_root(input, 0, array_length, runId))
+        return false;
     }
+
+    return true;
 }
 
 
 
-async heap_root(input, i, array_length) {
+async heap_root(input, i, array_length, runId) {
+    if (!this.isSortRunActive(runId))
+        return false;
+
     let left = 2 * i + 1;
     let right = 2 * i + 2;
     let max = i;
@@ -484,6 +604,9 @@ async heap_root(input, i, array_length) {
             }
             await this.sleep(sleepTime);
 
+            if (!this.isSortRunActive(runId))
+                return false;
+
     if (left < array_length && input[left] > input[max]) {
         max = left;
     }
@@ -504,11 +627,17 @@ async heap_root(input, i, array_length) {
 
         await this.sleep(sleepTime);
 
+        if (!this.isSortRunActive(runId))
+            return false;
+
         for(let i=0;i<input.length;i++){
             data1.datasets[0].backgroundColor[i]="lightblue";
         }
             // slow down
             await this.sleep(sleepTime);
+
+            if (!this.isSortRunActive(runId))
+                return false;
             
                 data1.datasets[0].data=input;
                 data1.labels=input;
@@ -517,8 +646,11 @@ async heap_root(input, i, array_length) {
 
            // await this.sleep(sleepTime);
 
-      await this.heap_root(input, max,array_length);
+      if (!await this.heap_root(input, max,array_length, runId))
+        return false;
     }
+
+    return true;
 }
 
 
@@ -559,12 +691,13 @@ async heap_root(input, i, array_length) {
             console.log("options2: ", options),
             console.log("SlideValue2:", slideValue),
             
-                <Container >
-                    <div style={{textAlign: "center", fontFamily: "sans-serif", alignItems: "center", paddingBottom: "5%", color: "blue", fontSize: "25px"}}>
-                      <p className="blink"> Sort Visualizer</p>
+                <Container className="sort-app">
+                    <div className="sort-app__header">
+                      <p className="blink">Sort Visualizer</p>
                     </div>
-                <div>
-                    <div style={{height: 300, display: "inline-flex", paddingLeft: "20%"}}>
+                <div className="visualizer-panel">
+                    <div className="slider-panel">
+                        <span className="slider-panel__label">Items</span>
                     <Slider
                         defaultValue={slideValue}
                         vertical 
@@ -574,7 +707,7 @@ async heap_root(input, i, array_length) {
                         onChange = {this.handleSliderEvent}
                     />                    
                     </div>
-                    <div style={{display: "inline-flex",  position: "relative", width: "50%", height:"40%", paddingLeft: "10%"}}>
+                    <div className="chart-panel">
                         <Bar 
                         type = {type}
                         options={options}
@@ -584,19 +717,15 @@ async heap_root(input, i, array_length) {
                     </div> 
                 </div>
                 
-                <div style={{paddingLeft: "30%", paddingTop: 30}}>
-                    <div style={{display: "inline-flex", width: "15%"}}>
-                        <button onClick={this.mergeSort}>Merge Sort</button>
-                    </div>
-                    <div style={{display: "inline-flex", width: "15%"}}>
-                        <button onClick={this.ClickQuickSort}>Quick Sort</button>
-                    </div>
-                    <div style={{display: "inline-flex", width: "15%"}}>
-                        <button onClick={this.ClickBubbleSort}>Bubble Sort</button>
-                    </div>
-                    <div style={{display: "inline-flex", width: "15%"}}>
-                        <button onClick={this.ClickHeapSort}>Heap Sort</button>
-                    </div>
+                <div className="sort-actions" aria-label="Sorting algorithms">
+                    <button className="sort-button" onClick={this.ClickMergeSort}>Merge Sort</button>
+                    <button className="sort-button" onClick={this.ClickQuickSort}>Quick Sort</button>
+                    <button className="sort-button" onClick={this.ClickBubbleSort}>Bubble Sort</button>
+                    <button className="sort-button" onClick={this.ClickHeapSort}>Heap Sort</button>
+                </div>
+                <div className="algorithm-details">
+                    <strong>Algorithm details:</strong>
+                    <p>{this.state.description}</p>
                 </div>
                 
                 </Container>

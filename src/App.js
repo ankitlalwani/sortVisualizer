@@ -5,7 +5,7 @@ import Home from './Home';
 
 function App() {
   return (
-    <div style={{paddingLeft: "5%", paddingTop: "5%"}}>
+    <div className="App">
         <Home />
     </div>
   );
